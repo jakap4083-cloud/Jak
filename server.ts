@@ -716,6 +716,48 @@ async function startServer() {
     res.json({ message: "Deposit request submitted", deposit });
   });
 
+  app.post("/api/user/pin/forgot", requireAuth, (req, res) => {
+    const db = getDb();
+    const user = db.users.find((u: any) => u.id === req.session.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Generate 6-digit reset token
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    user.pin_reset_token = token;
+    user.pin_reset_expires = addMinutes(new Date(), 15).toISOString();
+
+    console.log(`[EMAIL SIMULATION] To: ${user.email} | Subject: PIN Reset Code | Content: Your PIN reset code is ${token}. It expires in 15 minutes.`);
+    
+    createNotification(db, user.id, "Permintaan Reset PIN", `Kode reset PIN telah dikirimkan ke email ${user.email}.`, "INFO");
+
+    saveDb(db);
+    res.json({ message: "Kode reset telah dikirim ke email Anda." });
+  });
+
+  app.post("/api/user/pin/reset", requireAuth, (req, res) => {
+    const { token, new_pin } = req.body;
+    const db = getDb();
+    const user = db.users.find((u: any) => u.id === req.session.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (!user.pin_reset_token || user.pin_reset_token !== token) {
+      return res.status(400).json({ error: "Kode reset tidak valid" });
+    }
+
+    if (isAfter(new Date(), new Date(user.pin_reset_expires))) {
+      return res.status(400).json({ error: "Kode reset telah kedaluwarsa" });
+    }
+
+    user.transfer_pin = new_pin;
+    user.pin_reset_token = null;
+    user.pin_reset_expires = null;
+
+    createNotification(db, user.id, "PIN Berhasil Direset", "Keamanan PIN Anda telah berhasil diperbarui menggunakan kode reset.", "SUCCESS");
+
+    saveDb(db);
+    res.json({ message: "PIN berhasil diperbarui!" });
+  });
+
   app.post("/api/user/pin/set", requireAuth, (req, res) => {
     const { pin } = req.body;
     const db = getDb();
@@ -736,6 +778,50 @@ async function startServer() {
     } else {
       res.status(400).json({ error: "PIN tidak valid" });
     }
+  });
+
+  // --- DAILY TASKS ---
+  app.get("/api/user/tasks", requireAuth, (req, res) => {
+    const db = getDb();
+    const user = db.users.find((u: any) => u.id === req.session.userId);
+    const tasks = (db.daily_tasks || []).map((t: any) => {
+      const isCompleted = (user.completed_tasks || []).includes(t.id);
+      return { ...t, isCompleted };
+    });
+    res.json({ tasks });
+  });
+
+  app.post("/api/user/tasks/:id/complete", requireAuth, (req, res) => {
+    const { id } = req.params;
+    const db = getDb();
+    const user = db.users.find((u: any) => u.id === req.session.userId);
+    
+    if (!user.completed_tasks) user.completed_tasks = [];
+    if (user.completed_tasks.includes(id)) {
+      return res.status(400).json({ error: "Misi sudah diselesaikan hari ini" });
+    }
+
+    const task = (db.daily_tasks || []).find((t: any) => t.id === id);
+    if (!task) return res.status(404).json({ error: "Misi tidak ditemukan" });
+
+    user.completed_tasks.push(id);
+    user.balance_nx += task.reward;
+
+    db.transactions.push({
+      id: generateId(),
+      user_id: user.id,
+      type: "BONUS",
+      amount: task.reward,
+      currency: "NX",
+      description: `Misi Harian: ${task.title}`,
+      status: "SUCCESS",
+      created_at: new Date().toISOString()
+    });
+
+    createNotification(db, user.id, "Misi Selesai", `Anda mendapatkan ${task.reward} NX dari misi ${task.title}.`, "GIFT");
+
+    saveDb(db);
+    res.json({ message: "Misi berhasil diselesaikan!", balance_nx: user.balance_nx });
   });
 
   app.get("/api/notifications", requireAuth, (req, res) => {
@@ -836,6 +922,33 @@ async function startServer() {
         changed = true;
       }
     });
+
+    // Reset daily tasks at midnight (Simulated by checking date change)
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    if (db.last_reset_date !== todayStr) {
+      db.users.forEach((u: any) => {
+        u.completed_tasks = [];
+        // Also reset user product mining count
+        db.user_products.filter((up: any) => up.user_id === u.id).forEach((up: any) => {
+           up.mining_count_today = 0;
+           up.last_mining_date = null;
+        });
+      });
+      db.last_reset_date = todayStr;
+      changed = true;
+    }
+
+    // Ensure daily_tasks exists (DB Migration)
+    if (!db.daily_tasks) {
+      db.daily_tasks = [
+        { id: 'task_1', title: 'Check-in Harian', reward: 0.1, icon: 'CalendarDays' },
+        { id: 'task_2', title: 'Mulai Mining Pertama', reward: 0.2, icon: 'Zap' },
+        { id: 'task_3', title: 'Promosi ke Teman', reward: 0.5, icon: 'Share2' },
+        { id: 'task_4', title: 'Gabung Channel Telegram', reward: 0.3, icon: 'Send' }
+      ];
+      changed = true;
+    }
 
     if (changed) saveDb(db);
   }, 5000);

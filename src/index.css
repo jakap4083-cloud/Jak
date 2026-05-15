@@ -13,8 +13,13 @@
   --glass-border: rgba(255, 255, 255, 0.1);
 }
 
+html, body {
+  background-color: #050b18;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  background-color: var(--bg-deep);
   color: #ffffff;
   font-family: var(--font-sans);
   overflow-x: hidden;
@@ -64,7 +69,8 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: -1;
-  filter: blur(120px);
+  filter: blur(80px);
+  opacity: 0.1;
   animation: glow-move 20s infinite alternate ease-in-out;
 }
 
@@ -76,7 +82,8 @@ body {
   border-radius: 50%;
   pointer-events: none;
   z-index: -1;
-  filter: blur(120px);
+  filter: blur(80px);
+  opacity: 0.1;
   animation: glow-move 25s infinite alternate-reverse ease-in-out;
 }
 

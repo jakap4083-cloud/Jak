@@ -19,6 +19,7 @@ const mockChartData = [
 ];
 
 import CryptoMarket from '../components/CryptoMarket';
+import DailyTasks from '../components/DailyTasks';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -151,6 +152,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <DailyTasks />
 
       {/* Crypto Market Live */}
       <CryptoMarket />

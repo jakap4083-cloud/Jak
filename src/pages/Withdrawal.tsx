@@ -44,13 +44,23 @@ export default function Withdrawal() {
       }
       setStep(2);
     } else if (step === 2) {
+      if (!amount || valAmount <= 0) {
+        toast.error('Jumlah Tidak Valid', {
+          description: 'Silakan masukkan jumlah penarikan yang valid (minimal Rp 1).'
+        });
+        return;
+      }
       if (valAmount < minWithdraw) {
-        toast.error(`Minimum penarikan Rp ${minWithdraw.toLocaleString()}`);
+        toast.error('Di Bawah Batas Minimum', {
+          description: `Batas minimum penarikan adalah Rp ${minWithdraw.toLocaleString()}.`
+        });
         return;
       }
       if (valAmount > (user?.balance_idr || 0)) {
-         toast.error('Saldo tidak mencukupi');
-         return;
+        toast.error('Saldo Tidak Mencukupi', {
+          description: `Saldo Anda (Rp ${user?.balance_idr.toLocaleString()}) tidak mencukupi untuk penarikan ini.`
+        });
+        return;
       }
       if (!user?.transfer_pin) {
         setStep(3); // Go to set PIN if not set

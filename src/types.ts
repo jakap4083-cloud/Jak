@@ -17,6 +17,7 @@ export interface User {
   bank_account?: string;
   bank_holder?: string;
   transfer_pin?: string;
+  completed_tasks?: string[];
   created_at: string;
 }
 

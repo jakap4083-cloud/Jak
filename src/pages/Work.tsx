@@ -230,19 +230,27 @@ function MiningCard({ up, onStart, onClaim, isActioning }: any) {
             </div>
           </div>
           <div>
-            <h3 className="font-black text-lg uppercase tracking-tighter italic">{up.product.name}</h3>
+            <h3 className={cn(
+              "font-black text-lg uppercase tracking-tighter italic transition-all",
+              canClaim && "text-emerald-400 line-through decoration-emerald-500/50"
+            )}>
+              {up.product.name}
+            </h3>
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest leading-none">Status:</span>
               <div className={cn(
                 "h-1.5 w-1.5 rounded-full",
                 isMining ? "bg-[#00f2ff] animate-ping" : canClaim ? "bg-emerald-400 shadow-[0_0_8px_#10b981]" : "bg-white/10"
               )} />
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest leading-none underline-offset-4 decoration-[#00f2ff]/30",
-                isMining ? "text-[#00f2ff] underline" : canClaim ? "text-emerald-400 underline decoration-emerald-400/30 font-black" : "text-gray-600"
-              )}>
-                {isMining ? 'Mining Aktif' : canClaim ? 'PULSA TERSEDIA (SIAP KLAIM)' : 'Menunggu'}
-              </span>
+              <div className="flex items-center space-x-1">
+                <span className={cn(
+                  "text-[9px] font-black uppercase tracking-widest leading-none underline-offset-4 decoration-[#00f2ff]/30",
+                  isMining ? "text-[#00f2ff] underline" : canClaim ? "text-emerald-400 underline decoration-emerald-400/30 font-black" : "text-gray-600"
+                )}>
+                  {isMining ? 'Mining Aktif' : canClaim ? 'PULSA TERSEDIA (SIAP KLAIM)' : 'Menunggu'}
+                </span>
+                {canClaim && <CheckCircle2 size={10} className="text-emerald-400" />}
+              </div>
             </div>
           </div>
         </div>

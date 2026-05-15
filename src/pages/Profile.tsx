@@ -46,13 +46,49 @@ export default function Profile() {
   }, [user]);
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
   const [pinForm, setPinForm] = useState({
     old_pin: '',
     new_pin: '',
     confirm_pin: '',
+    token: '',
   });
 
+  const handleForgotPin = async () => {
+    try {
+      await api.post('/user/pin/forgot', {});
+      toast.success('Kode reset telah dikirim ke email Anda');
+      setIsResetMode(true);
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Gagal mengirim kode reset');
+    }
+  };
+
+  const handleResetPin = async () => {
+    if (pinForm.new_pin.length !== 6 || pinForm.new_pin !== pinForm.confirm_pin) {
+      return toast.error('PIN baru tidak cocok atau tidak valid');
+    }
+    if (!pinForm.token) {
+      return toast.error('Silakan isi kode token reset');
+    }
+
+    try {
+      await api.post('/user/pin/reset', {
+        token: pinForm.token,
+        new_pin: pinForm.new_pin
+      });
+      toast.success('PIN Berhasil Direset');
+      setIsResetMode(false);
+      setIsPinModalOpen(false);
+      setPinForm({ old_pin: '', new_pin: '', confirm_pin: '', token: '' });
+      refreshUser();
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'Gagal mereset PIN');
+    }
+  };
+
   const handleUpdatePin = async () => {
+    if (isResetMode) return handleResetPin();
     if (user?.transfer_pin && !pinForm.old_pin) {
        return toast.error('Silakan isi PIN lama');
     }
@@ -68,7 +104,7 @@ export default function Profile() {
       await api.post('/user/pin/set', { pin: pinForm.new_pin });
       toast.success('PIN Berhasil Diperbarui');
       setIsPinModalOpen(false);
-      setPinForm({ old_pin: '', new_pin: '', confirm_pin: '' });
+      setPinForm({ old_pin: '', new_pin: '', confirm_pin: '', token: '' });
       refreshUser();
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'Gagal memperbarui PIN');
@@ -404,7 +440,10 @@ export default function Profile() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsPinModalOpen(false)}
+              onClick={() => {
+                setIsPinModalOpen(false);
+                setIsResetMode(false);
+              }}
               className="absolute inset-0 bg-[#050b18]/80 backdrop-blur-md"
             />
             <motion.div 
@@ -416,14 +455,26 @@ export default function Profile() {
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-black uppercase italic tracking-tighter text-white">Keamanan PIN</h3>
                 <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest italic">
-                  {user?.transfer_pin ? 'Update Security Node' : 'Initialize Access PIN'}
+                  {isResetMode ? 'Neural Reset Protocol' : (user?.transfer_pin ? 'Update Security Node' : 'Initialize Access PIN')}
                 </p>
               </div>
 
               <div className="space-y-4">
-                {user?.transfer_pin && (
+                {isResetMode ? (
                   <div className="space-y-2">
-                    <label className="text-[9px] font-black text-[#00f2ff] uppercase tracking-widest px-2">PIN Lama</label>
+                    <label className="text-[9px] font-black text-[#00f2ff] uppercase tracking-widest px-2">Kode Token (Cek Email)</label>
+                    <input 
+                      type="text"
+                      maxLength={6}
+                      value={pinForm.token}
+                      onChange={(e) => setPinForm({ ...pinForm, token: e.target.value.replace(/\D/g, '') })}
+                      className="w-full h-14 bg-[#00f2ff]/5 border border-[#00f2ff]/20 rounded-2xl px-5 text-center text-xl font-black tracking-widest outline-none focus:border-[#00f2ff]/30 text-[#00f2ff]"
+                      placeholder="XXXXXX"
+                    />
+                  </div>
+                ) : user?.transfer_pin && (
+                  <div className="space-y-2 text-right">
+                    <label className="text-[9px] font-black text-[#00f2ff] uppercase tracking-widest px-2 block text-left">PIN Lama</label>
                     <input 
                       type="password"
                       maxLength={6}
@@ -431,6 +482,12 @@ export default function Profile() {
                       onChange={(e) => setPinForm({ ...pinForm, old_pin: e.target.value.replace(/\D/g, '') })}
                       className="w-full h-14 bg-white/5 border border-white/5 rounded-2xl px-5 text-center text-xl font-black tracking-widest outline-none focus:border-[#00f2ff]/30"
                     />
+                    <button 
+                      onClick={handleForgotPin}
+                      className="text-[9px] font-black text-gray-500 uppercase tracking-widest hover:text-[#00f2ff] transition-colors mt-2 underline"
+                    >
+                      Lupa PIN?
+                    </button>
                   </div>
                 )}
                 <div className="space-y-2">
@@ -463,7 +520,10 @@ export default function Profile() {
                   Otorisasi PIN
                 </button>
                 <button 
-                  onClick={() => setIsPinModalOpen(false)}
+                  onClick={() => {
+                    setIsPinModalOpen(false);
+                    setIsResetMode(false);
+                  }}
                   className="w-full h-14 glass rounded-2xl border-white/5 text-gray-500 font-bold uppercase tracking-widest text-[9px]"
                 >
                   Kembali

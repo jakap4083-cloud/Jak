@@ -34,6 +34,29 @@ export const useAuth = () => useContext(AuthContext);
 
 import { Toaster } from 'sonner';
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: any, errorInfo: any) { console.error('FATAL_CRASH:', error, errorInfo); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#050b18] flex items-center justify-center p-10 text-center">
+          <div className="space-y-4">
+            <h1 className="text-2xl font-black text-rose-500 uppercase italic">Neural Error</h1>
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Sistem mengalami gangguan transmisi. Silakan muat ulang halaman.</p>
+            <button onClick={() => window.location.reload()} className="px-6 h-12 glass rounded-xl border-white/10 text-white font-black uppercase text-[10px] tracking-widest">Muat Ulang</button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,8 +107,9 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, setUser, loading, refreshUser, isMaintenance }}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-[#050b18] text-white selection:bg-[#00f2ff]/30">
+      <ErrorBoundary>
+        <BrowserRouter>
+          <div className="min-h-screen bg-[#050b18] text-white selection:bg-[#00f2ff]/30 relative overflow-hidden">
           <Toaster 
             theme="dark" 
             position="top-center" 
@@ -113,6 +137,7 @@ export default function App() {
           </Routes>
         </div>
       </BrowserRouter>
+      </ErrorBoundary>
     </AuthContext.Provider>
   );
 }

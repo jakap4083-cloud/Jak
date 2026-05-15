@@ -175,6 +175,12 @@ const initialData = {
   withdrawals: [],
   deposits: [],
   chats: [],
+  daily_tasks: [
+    { id: 'task_1', title: 'Check-in Harian', reward: 0.1, icon: 'CalendarDays' },
+    { id: 'task_2', title: 'Mulai Mining Pertama', reward: 0.2, icon: 'Zap' },
+    { id: 'task_3', title: 'Promosi ke Teman', reward: 0.5, icon: 'Share2' },
+    { id: 'task_4', title: 'Gabung Channel Telegram', reward: 0.3, icon: 'Send' }
+  ],
   banners: [
     { id: 'b1', imageUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=800&h=400&auto=format&fit=crop', link: '#', status: 'ACTIVE' },
     { id: 'b2', imageUrl: 'https://images.unsplash.com/photo-1642104704074-907c0698bcd9?q=80&w=800&h=400&auto=format&fit=crop', link: '#', status: 'ACTIVE' }
